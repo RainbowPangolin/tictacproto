@@ -13,7 +13,7 @@ let RoomList = new Map() //probably better to do as a class
 const wsServer = new ws.WebSocketServer({ noServer: true });
 wsServer.on('connection', (socket, request) => {
   let requestedRoom =  request.url.substring(1)
-  console.log("request:", request)
+  // console.log("request:", request)
   ClientSocketMap[socket] = requestedRoom
 
   if (RoomList[requestedRoom]) {
@@ -23,7 +23,11 @@ wsServer.on('connection', (socket, request) => {
   }
   
   socket.on('message', message => {
-    console.log(RoomList[ClientSocketMap[socket]])
+    const obj = JSON.parse(message)
+    console.log(obj.x)
+    // console.log(obj)
+    // console.log({x:1,y:444})
+    // console.log(RoomList[ClientSocketMap[socket]])
 
     //each client has a Room property
     //broadcasting to Room broadcasts to all members of that room
@@ -31,6 +35,7 @@ wsServer.on('connection', (socket, request) => {
 
     RoomList[ClientSocketMap[socket]].forEach(element => {
       element.send(JSON.stringify(JSON.parse(message)));
+
     });
   });
 });

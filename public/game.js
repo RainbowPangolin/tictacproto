@@ -1,3 +1,5 @@
+import * as myNet from './index.js'
+
 //Basic tic-tac-toe game, modular enough to expand to something like connect-4 without too much trouble
 
 //Stores state of marking (x, o, unmarked, or new markings to be added)
@@ -8,42 +10,52 @@ class Tile {
         this.x = x
         this.y = y
         //options has a 'default marking' option. the default is unmarked.
-        this.updateMarking(options?.mark)
-        const myButton = document.createElement("button");
-
-        this.tileButton = myButton
         //create button element and append to DOM in correct location
-        
+        const myButton = document.createElement("button");
+        let buttonData = JSON.stringify({x:x, y:y})
+        myButton.setAttribute('data-game', buttonData)
+        this.tileButton = myButton
         options.board.append(myButton)
+        this.updateMarking(options?.mark)
+
     }
 
     updateMarking(mark){
         this.mark = mark
+        if (mark != undefined){
+            this.tileButton.innerHTML = mark
+        }
     }
 }
-
 const clientGameState = {
     currentTurn: null,
-    myTurn: this.currentTurn == this.mySelf,
-    mySelf: null
+    myTurn:() => (this.currentTurn == this.mySelf),
+    mySelf: null,
+    tiles: []
 }
 
 function createBoard(size){
     for (let i = 0; i < size; i++){
         const myDiv = document.createElement("div");
         document.querySelector("#board").append(myDiv)
+        clientGameState.tiles[i] = []
         for (let j = 0; j < size; j++){
             let tile = new Tile(i,j, document, {board: myDiv} )
+            clientGameState.tiles[i][j] = tile
         }
     }
 }
 
 //tester buttons for no-server-testing
+/*
 let stateBtn = document.querySelector("#update-state-event-btn")
 let playerWinBtn = document.querySelector("#player-win-event-btn")
 stateBtn.addEventListener('click', (e) => {
-    stateBtn.dispatchEvent(new CustomEvent('gameStateChange', { bubbles: true, detail: { board: "A representation of full board" } })) //it would be more efficient to have this be simply the change that occurred
-})
+    stateBtn.dispatchEvent(new CustomEvent('updategamestate', { bubbles: true, detail: { 
+        board: "A representation of full board",
+        move: {x: 1, y: 1, mark: 'x'} //[1,1,"x"]
+    }})) //it would be more efficient to have this be simply the change that occurred
+})*/
 
 function updatePlayer(character){
     document.querySelector("#player > p").innerHTML = character
@@ -56,11 +68,17 @@ function updateCurrentTurn(character){
 }
 
 function displayWin(winlose){
+    document.querySelector("#winloss").innerHTML = winlose
 
 }
 
-function updateBoard(board){
-    console.log(board)
+function updateBoard(move){
+    // console.log(move)
+    let x = move.x
+    let y = move.y
+    let mark = move.mark
+    clientGameState.tiles[x][y].updateMarking(mark)
+    console.log("Move made with mark ", mark)
 }
 
 function main(){
@@ -84,9 +102,9 @@ function main(){
 
     //event listeners
 
-    //listen for board update event, same as playerclick
-    document.addEventListener('gameStateChange', (e) => { 
-        updateBoard(e.detail.board)
+    //listen for board update event
+    document.addEventListener('updategamestate', (e) => { 
+        updateBoard(e.detail.move)
         //redraw board with new info, allow or disable player move depending on who's turn it is
         if (e.turn == clientGameState.mySelf) {
             clientGameState.myTurn = true
@@ -106,6 +124,13 @@ function main(){
 
         promptRestart()
     })
+
+    //listen for player-move
+
+    document.addEventListener('playermove', (e) => {
+        // console.log(JSON.stringify(e.detail.move))
+        myNet.sendMove(e.detail.move)
+    })
 }
 
 let promptChooseCharacter = new Promise( function (res) {
@@ -118,5 +143,19 @@ let promptChooseCharacter = new Promise( function (res) {
         }
     })
 });
+
+let myBoard = document.querySelector("#board")
+myBoard.addEventListener('click', function emitMoveEvent(e) {
+    if (e.target.hasAttribute('data-game')){
+        // console.log(e)
+        let myMoveStr = e.target.getAttribute("data-game")
+        let myMove = JSON.parse(myMoveStr)
+        myMove.mark = clientGameState.mySelf
+        myBoard.dispatchEvent(new CustomEvent('playermove', { bubbles: true, detail: { 
+            board: "A representation of full board",
+            move: myMove
+        }}))
+    }
+})
 
 main()

@@ -7,9 +7,16 @@ let room
 
 function clickPos(event) {
   webSocket.send(JSON.stringify({"mouseX": event.clientX, "mouseY": event.clientY}));
-
 }
 
+export function poo(pie){
+  console.log(pie)
+}
+
+export function sendMove(moveObj){
+  // console.log(moveObj)
+  webSocket.send(JSON.stringify(moveObj));
+}
 
 function connectToSocket(usr, rm){
   webSocket = new WebSocket(url + rm, protocols);
@@ -24,7 +31,14 @@ function connectToSocket(usr, rm){
   webSocket.onmessage = (event) => {
     const msg = JSON.parse(event.data);
   
-    console.log("Received: ",msg)
+    console.log("Received: ", msg)
+    
+    if (true){ //check if valid move/message is a move?
+      //emit event to trigger game board update
+      document.dispatchEvent(new CustomEvent('updategamestate', {detail: {
+        move: msg
+      }}))
+    }
   };
 
 }
