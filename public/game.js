@@ -46,20 +46,12 @@ function createBoard(size){
     }
 }
 
-//tester buttons for no-server-testing
-/*
-let stateBtn = document.querySelector("#update-state-event-btn")
-let playerWinBtn = document.querySelector("#player-win-event-btn")
-stateBtn.addEventListener('click', (e) => {
-    stateBtn.dispatchEvent(new CustomEvent('updategamestate', { bubbles: true, detail: { 
-        board: "A representation of full board",
-        move: {x: 1, y: 1, mark: 'x'} //[1,1,"x"]
-    }})) //it would be more efficient to have this be simply the change that occurred
-})*/
-
 function updatePlayer(character){
     document.querySelector("#player > p").innerHTML = character
     clientGameState.mySelf = character
+
+    myNet.sendPlayerInfo({msgType: 'info', player: character})
+
 }
 
 function updateCurrentTurn(character){
@@ -129,7 +121,7 @@ function main(){
 
     document.addEventListener('playermove', (e) => {
         // console.log(JSON.stringify(e.detail.move))
-        myNet.sendMove(e.detail.move)
+        myNet.sendMove({msgType: 'move', move: e.detail.move})
     })
 }
 

@@ -18,6 +18,11 @@ export function sendMove(moveObj){
   webSocket.send(JSON.stringify(moveObj));
 }
 
+export function sendPlayerInfo(playerObj){
+  // console.log(moveObj)
+  webSocket.send(JSON.stringify(playerObj));
+}
+
 function connectToSocket(usr, rm){
   webSocket = new WebSocket(url + rm, protocols);
   user = usr
@@ -36,7 +41,7 @@ function connectToSocket(usr, rm){
     if (true){ //check if valid move/message is a move?
       //emit event to trigger game board update
       document.dispatchEvent(new CustomEvent('updategamestate', {detail: {
-        move: msg
+        move: msg.lastTurn
       }}))
     }
   };
@@ -51,9 +56,15 @@ const roomBBtn = document.querySelector("#roomB")
 
 roomABtn.onclick = () => {
   connectToSocket("userA", "A")
+  roomABtn.remove()
+  roomBBtn.remove()
+
 }
 roomBBtn.onclick = () => {
   connectToSocket("userB", "B")
+  roomBBtn.remove()
+  roomABtn.remove()
+
 }
 
 
