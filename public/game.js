@@ -31,7 +31,8 @@ const clientGameState = {
     currentTurn: null,
     myTurn:() => (this.currentTurn == this.mySelf),
     mySelf: null,
-    tiles: []
+    tiles: [],
+    started: false
 }
 
 function createBoard(size){
@@ -94,11 +95,15 @@ function main(){
 
     //event listeners
 
+    document.addEventListener('startgameclient', () => {
+        clientGameState.started = true
+    })
+
     //listen for board update event
     document.addEventListener('updategamestate', (e) => { 
         updateBoard(e.detail.move)
         //redraw board with new info, allow or disable player move depending on who's turn it is
-        if (e.turn == clientGameState.mySelf) {
+        if (e.detail.nextMoveBy == clientGameState.mySelf) {
             clientGameState.myTurn = true
         } else {
             clientGameState.myTurn = false
@@ -139,14 +144,16 @@ let promptChooseCharacter = new Promise( function (res) {
 let myBoard = document.querySelector("#board")
 myBoard.addEventListener('click', function emitMoveEvent(e) {
     if (e.target.hasAttribute('data-game')){
-        // console.log(e)
-        let myMoveStr = e.target.getAttribute("data-game")
-        let myMove = JSON.parse(myMoveStr)
-        myMove.mark = clientGameState.mySelf
-        myBoard.dispatchEvent(new CustomEvent('playermove', { bubbles: true, detail: { 
-            board: "A representation of full board",
-            move: myMove
-        }}))
+        if (clientGameState.started && clientGameState.myTurn) {
+            // console.log(e)
+            let myMoveStr = e.target.getAttribute("data-game")
+            let myMove = JSON.parse(myMoveStr)
+            myMove.mark = clientGameState.mySelf
+            myBoard.dispatchEvent(new CustomEvent('playermove', { bubbles: true, detail: { 
+                board: "A representation of full board",
+                move: myMove
+            }}))
+        }
     }
 })
 

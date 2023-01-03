@@ -37,12 +37,15 @@ function connectToSocket(usr, rm){
     const msg = JSON.parse(event.data);
   
     console.log("Received: ", msg)
-    
-    if (true){ //check if valid move/message is a move?
-      //emit event to trigger game board update
+
+    if (msg.msgType == 'move'){ //check if valid move/message is a move?
+      //got message from server to update client state
       document.dispatchEvent(new CustomEvent('updategamestate', {detail: {
-        move: msg.lastTurn
+        move: msg.lastTurn,
+        nextMoveBy: msg.nextMoveBy
       }}))
+    } else if (msg.msgType == 'startgame'){
+      document.dispatchEvent(new CustomEvent('startgameclient'))
     }
   };
 

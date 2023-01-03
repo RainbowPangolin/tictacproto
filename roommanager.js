@@ -1,8 +1,13 @@
+const myGame = require('./servergame');
+
+
 class Room {
     constructor(id, gameSession){
         this.id = id
         this.gameSession = gameSession
         this.connectedSockets = []
+        this.numPlayers = 0
+        this.maxPlayers = 8 //TODO change
     }
 
     addSocket(socket){
@@ -18,6 +23,7 @@ class Room {
 
     addPlayer(player){
         this.gameSession.addPlayer(player)
+        this.numPlayers += 1
     }
 
     //callback for broadcast to all?
@@ -30,19 +36,30 @@ let roomsByID = new Map()
 let roomsBySocket = new Map()
 
 const RoomManager = {
-    joinRoom(id, gameSession, socket) {
+    joinRoom(id, socket) {
         if (roomsByID[id]) {
+            let thisRoom = roomsByID[id]
             console.log("Room already created, joining existing")
-            roomsByID[id].connectedSockets.push(socket)
-            roomsBySocket[socket] = roomsByID[id]
+            thisRoom.connectedSockets.push(socket)
+            roomsBySocket[socket] = thisRoom
+
+           
+
             return
         } //prevents adding room or changing room info when it already exists
-        let newRoom = new Room(id, gameSession) 
+
+        let gameSess = new myGame.GameSession(socket)
+        gameSess.setRules(2, 3, 3)
+        gameSess.generateBoard()
+
+        let newRoom = new Room(id, gameSess) 
         newRoom.addSocket(socket)
         newRoom.setHost(socket)
         rooms.add(newRoom)
         roomsByID[id] = newRoom
         roomsBySocket[socket] = newRoom
+        console.log("New room created!")
+
     },
 
     // cutRoom(id) {

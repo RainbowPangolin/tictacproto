@@ -1,3 +1,5 @@
+// const EventEmitter = require('events');
+
 function diagonalsToArrays(matrix){
     //return a list of arrays
     //do this to get top left to bottom right arrays, then rotate 90 deg and repeat algorithm 3x
@@ -27,35 +29,38 @@ function diagonalsToArrays(matrix){
 
 // console.log(diagonalsToArrays([[1,2,3],[4,5,6],[7,8,9]]))
 
-class GameSession {
-    roomID;
+class GameSession { // maybe extend eventEmitter so a game session can emit events?
+    socket;
     inProgress;
     curNumber;
     numPlayers;
+    // maxPlayers;
     size;
     winSize;
     players = [];
-
-    constructor(roomID){
-        this.roomID = roomID
+    requiredPlayers;
+    constructor(socket){
+        this.socket = socket
         this.inProgress = false
-        console.log("Game started!")
         this.curNumber = 0
+
+        console.log("New game constructed on server")
     }
     
     get currentPlayer(){
-        this.players[this.curNumber]
+        return this.players[this.curNumber]
     }
 
     addPlayer(player){
         this.players.push(player)
+        this.numPlayers
     }
 
     //board- a representation of the game board
     //will support multiple characters, arbitrary size
     
-    setRules(numPlayers, size, winSize){
-        this.numPlayers = numPlayers
+    setRules(requiredPlayers, size, winSize){
+        this.requiredPlayers = requiredPlayers
         this.size = size
         this.winSize = winSize
     }
@@ -81,7 +86,10 @@ class GameSession {
 
     makeMove(move){
         this.board[move.x][move.y] = move.mark
-        this.checkWin(this.board)
+        let winner = this.checkWin(this.board)
+        if(winner){
+            console.log(winner)
+        }
         this.curNumber = ((this.curNumber + 1) % this.players.length)
     }
 
@@ -92,8 +100,9 @@ class GameSession {
         for (let i = 0; i < checkables.length; i++){ //goes over each array
             let curPlayer = undefined
             let tally = 0
-            checkables[i].forEach( element => {
-                if (curPlayer == element) {
+            for( const element of checkables[i] ){
+                // console.log(element)
+                if (curPlayer && curPlayer === element) {
                     tally++ 
                 } else {
                     curPlayer = element
@@ -101,10 +110,17 @@ class GameSession {
                 if (tally >= this.winSize) {
                     return curPlayer
                 }
-            })
+            }
+            
             
         }
         return null 
+    }
+
+    startGame(){
+        // const eventEmitter = new EventEmitter ();
+        this.socket.emit('startgameserver')
+        console.log("Game started in room ", this.socket, "!")
     }
 
 }

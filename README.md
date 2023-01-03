@@ -33,3 +33,7 @@ Proj1- basic tic tac toe game, but multiplayer/online with automatically generat
 Proj 2- advanced tic tac toe game with expanded infrastructure: Make custom rooms, custom rules, more than 2 players. 
 
 Proj2- DIno runner game using the same multiplayer infrastructure. Hosted on azure
+
+
+
+--- GET an auto linter that quick fixes on save like the Go linter

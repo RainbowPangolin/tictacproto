@@ -4,7 +4,7 @@ const port = 3001
 const ws = require('ws');
 
 
-const myGame = require('./servergame');
+// const myGame = require('./servergame');
 const RoomManager = require('./roommanager'); //TODO probably a better way to construct this
 app.use(express.static('public'))
 
@@ -23,11 +23,9 @@ wsServer.on('connection', (socket, request) => {
 
   // ClientSocketMap[socket] = requestedRoomID
 
-  let gameSess = new myGame.GameSession(socket)
-  gameSess.setRules(2, 3, 3)
-  gameSess.generateBoard()
 
-  rm.joinRoom(requestedRoomID, gameSess, socket) //should be an idempotent operation
+
+  rm.joinRoom(requestedRoomID, socket) //should be an idempotent operation?
   //TODO do a check for if this user is making the room and thus should be host
   // rm.getRoomByID(requestedRoomID).addSocket(socket)
 
@@ -39,7 +37,19 @@ wsServer.on('connection', (socket, request) => {
 
 
 
-  
+  socket.on('startgameserver', (e => {
+    // console.log("poo")
+    let currentRoom = rm.getRoomBySocket(socket)
+
+    let startGameMsg = {
+      msgType: 'startgame'
+    }
+    currentRoom.connectedSockets.forEach(element => {
+      // console.log(element)
+      element.send(JSON.stringify(startGameMsg));
+    });
+  }))
+
   
   socket.on('message', message => {
     // const obj = JSON.parse(message)
@@ -54,28 +64,38 @@ wsServer.on('connection', (socket, request) => {
       let currentRoom = rm.getRoomBySocket(socket)
   
       handleMove(currentRoom.gameSession, move)
+
   
-      let clientUpdate = nextTurnFrom(currentRoom.gameSession, move)
+      let clientUpdate ={
+        msgType: 'move',
+        lastTurn: move, 
+        nextMoveBy: currentRoom.gameSession.currentPlayer
+      }
+      
+      // nextTurnFrom(currentRoom.gameSession, move)
   
       currentRoom.connectedSockets.forEach(element => {
         // console.log(element)
         element.send(JSON.stringify(clientUpdate));
       });
     } else if (parsed.msgType == "info") {
-      rm.getRoomBySocket(socket).addPlayer(parsed.player)
+
+      let f = rm.getRoomBySocket(socket)
+
+      f.addPlayer(parsed.player)
+
+      //Game is started here, TODO- should be moved elsewhere
+      if (f.numPlayers == f.gameSession.requiredPlayers){
+        socket.emit('startgameserver')
+      }
+      
     } else {
       console.log("ERROR: Unexpected message type")
     }
 
-
-    // RoomList[ClientSocketMap[socket]].forEach(element => {
-    //   element.clientSocket.send(JSON.stringify(JSON.parse(message)));
-    // });
-
-
-
   });
 });
+
 
 
 function handleMove(gameSession, move){
@@ -85,19 +105,8 @@ function handleMove(gameSession, move){
   }
   
   gameSession.makeMove(move)
-  
-  //update game state on server
 
 }
-
-function nextTurnFrom(gameSession, lastMove){
-
-  return {lastTurn: lastMove, nextMoveBy: gameSession.currentPlayer}
-
-  // {lastTurn: [1,1,'x'], nextMoveBy: 'o'}
-
-}
-
 function moveIsValid(move){
   return true
 }
@@ -115,17 +124,6 @@ app.get('/', (req, res) => {
   res.sendFile('/index.html', {root: path.join(__dirname, 'public')})
 })
 
-app.get('/poo', (req, res) => {
-  // let socketKey = req.get("sec-websocket-key")
-  // res.set({
-  //   'Upgrade': 'websocket',
-  //   'Connection': 'Upgrade',
-  //   'sec-websocket-accept': socketKey
-  // })
-
-  // res.status(101).send('Switching Protocols')
-  // // res.sendStatus(101)
-})
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
